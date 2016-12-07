@@ -13,7 +13,7 @@ from scipy.stats import skew
 #Parses keywords file 
 def keyWords(): 
 	keyWordsList = []
-	f = open('total word search/results-20161106-145517.csv')
+	f = open('key_words.csv')
 	lines = f.readlines() 
 	f.close() 
 	for i, line in enumerate(lines): 
@@ -205,16 +205,13 @@ def evaluate(signatureVectors):
 	for key in signatureVectors: 
 		pairs.append(key)
 	n = len(pairs)
-	print n 
-	print pairs 
 	for i in range(0, n, 2):
-		print i   
 		rus = pairs[i]
 		eng = pairs[i + 1]
 		svRus = signatureVectors[rus]
 		svEng = signatureVectors[eng]
 		d1 = getDistance(svRus, svEng) 
-		print "Distance: %d" % d1  
+		print("Distance: %d" % d1) 
 		exit() 
 
 #Canberra distance function 
@@ -226,7 +223,6 @@ def getDistance(sv1, sv2):
 		if elem1 > 0 or elem2 > 0: 
 			d = d + abs(elem1 - elem2) / float(elem1 + elem2)
 	return d 
-
 
 ############################################## DRIVER ###############################################
 graphs = createGraphs(keyWords())
