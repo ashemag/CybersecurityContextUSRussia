@@ -4,7 +4,7 @@ from itertools import combinations
 import csv 
 def keyWords(): 
 	keyWordsList = []
-	f = open('total word search/results-20161106-145517.csv')
+	f = open('key_words.csv')
 	lines = f.readlines() 
 	f.close() 
 	for i, line in enumerate(lines): 
@@ -165,7 +165,7 @@ def getTotalWeight(edges):
 
 def createNewFile(filename, edges):
 	filename = filename[:-3]
-	filename = filename + "_new.csv"
+	filename = filename + "_processed.csv"
 	f = open(filename, 'w')
 
 	fields = ('Source', 'Target', 'count', 'Type', 'Weight')
@@ -179,7 +179,23 @@ def createNewFile(filename, edges):
 		wr.writerow({'Source':pair[0], 'Target': pair[1], 'count':edges[pair], 'Type': 'Undirected', 'Weight': str(weight)})
 	f.close() 
 
-def addEdgesWithExistingData(filename, d): 
+
+def choose(n, k):
+    """
+    A fast way to calculate binomial coefficients by Andrew Dalke (contrib).
+    """
+    if 0 <= k <= n:
+        ntok = 1
+        ktok = 1
+        for t in xrange(1, min(k, n - k) + 1):
+            ntok *= n
+            ktok *= t
+            n -= 1
+        return ntok // ktok
+    else:
+        return 0
+
+def addEdgesWithExistingData(filename, d, typePercent): 
 	nodes, edges = processFile(filename)
 	beforeCount = len(edges)
 	examined = set() 
@@ -200,16 +216,24 @@ def addEdgesWithExistingData(filename, d):
 	afterCount = len(edges)
 	createNewFile(filename, edges)
 	print "Before: %d, After: %d" % (beforeCount, afterCount)
+	percent = afterCount / float(choose(len(nodes), 2)) * 100 
+	print "Calculated %f percent of complete graph" % (percent) 
+	typePercent.append(percent)
 
 def updateData(eng_files, rus_files): 
 	d_eng = preprocess('eng', keyWords())
 	d_rus = preprocess('rus', keyWords())
+	engPercent = []
+	rusPercent = []
 	for eng_file in eng_files: 
 		print "On file: %s" % eng_file 
-		addEdgesWithExistingData(eng_file, d_eng)
+		addEdgesWithExistingData(eng_file, d_eng, engPercent)
 	for rus_file in rus_files: 
 		print "On file: %s" % rus_file 
-		addEdgesWithExistingData(rus_file, d_rus)
+		addEdgesWithExistingData(rus_file, d_rus, rusPercent)
+
+	print "On average, English graphs added %f percent of edges out of all edges needed to form a complete graph" % (sum(engPercent) / float(len(engPercent)))
+	print "On average, Russian graphs added %f percent of edges out of all edges needed to form a complete graph" % (sum(rusPercent) / float(len(rusPercent)))
 
 	# value = files[fileKey]
 	# nodes, centerNode = value[0], value[1]
