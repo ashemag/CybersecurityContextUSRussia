@@ -1,4 +1,4 @@
-#using python 3.5.2
+#using python 2.7.x
 import sys
 sys.path.insert(0, '../')
 from snap import *
@@ -85,6 +85,7 @@ def processFile(filename):
 	return G, edgeWeights, IdMap, counts 
 
 def createGraphs(words):
+	print "Creating graphs..."
 	s = {} 
 	for word in words: 
 		name1 = 'russian graphs/' + word + '_rus.csv'
@@ -92,13 +93,13 @@ def createGraphs(words):
 		G1, edgeWeights1, IdMap1, counts1 = processFile(name1)
 		G2, edgeWeights2, IdMap2, counts2 = processFile(name2)
 		
-		# processGraph(G1, counts1, edgeWeights1, IdMap1) 
+		processGraph(G1, counts1, edgeWeights1, IdMap1) 
 		processGraph(G2, counts2, edgeWeights2, IdMap2) 
-		exit() 
+
 		s[word + "_RUS"] = (G1, edgeWeights1, IdMap1, word)
 		s[word + "_ENG"] = (G2, edgeWeights2, IdMap2, word)
 
-		break 
+	print "Created %d graphs" % len(s)
 	return s 
 
 def writeToFile(G, idMap, edgeWeights): 
@@ -119,7 +120,7 @@ def processGraph(G, counts, edgeWeights, idMap):
 		count = edgeWeights[srcId, dstId]
 		if count < t: 
 			G.DelEdge(srcId, dstId)
-	writeToFile(G, idMap, edgeWeights)
+
 ############################################## FEATURE EXTRACTION / AGGREGATION ###############################################
 
 #helper function 
@@ -190,6 +191,7 @@ def aggregateFeatures(m):
 	return sv
 
 def netSimile(graphs): #order is russian and then english 
+	print "Starting net simile alg..."
 	signatureVectors = {} 
 	for i, key in enumerate(graphs): 	
 		value = graphs[key]
@@ -200,19 +202,22 @@ def netSimile(graphs): #order is russian and then english
 	return signatureVectors 
 ############################################## DISTANCE FUNCTION ###############################################
 
-def evaluate(signatureVectors): 
-	pairs = []
-	for key in signatureVectors: 
-		pairs.append(key)
-	n = len(pairs)
-	for i in range(0, n, 2):
-		rus = pairs[i]
-		eng = pairs[i + 1]
+def evaluate(signatureVectors, keywords): 
+	print "Evaluating distances..."
+
+	allDistances = []
+	for word in keywords: 
+		rus = word + "_RUS"
+		eng = word + "_ENG"
 		svRus = signatureVectors[rus]
 		svEng = signatureVectors[eng]
 		d1 = getDistance(svRus, svEng) 
-		print("Distance: %d" % d1) 
-		exit() 
+		allDistances.append([word, int(d1)])
+
+	allDistances = sorted(allDistances, key=lambda x: x[1],reverse=False)
+	# for d in allDistances: 
+	# 	print "Distance for %s: %d" % (d[0], d[1]) 
+	print allDistances 
 
 #Canberra distance function 
 def getDistance(sv1, sv2): 
@@ -225,8 +230,9 @@ def getDistance(sv1, sv2):
 	return d 
 
 ############################################## DRIVER ###############################################
-graphs = createGraphs(keyWords())
+key_words = keyWords() 
+graphs = createGraphs(key_words)
 # print len(graphs) 
 signatureVectors = netSimile(graphs) 
 # print len(signatureVectors)
-evaluate(signatureVectors)
+evaluate(signatureVectors, key_words)
