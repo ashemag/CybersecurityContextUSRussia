@@ -18,13 +18,13 @@
         // Create the data table.
         var data = new google.visualization.DataTable();
         data.addColumn('string', 'Theme');
-        data.addColumn('number', 'Network Distance');
+        data.addColumn('number', 'Distance');
         data.addRows([
-          ['WB_133_INFORMATION_AND_COMMUNICATION_TECHNOLOGIES', 14], ['GENERAL_GOVERNMENT', 25], ['WB_696_PUBLIC_SECTOR_MANAGEMENT', 32], ['WB_678_DIGITAL_GOVERNMENT', 34], ['CYBER_ATTACK', 40], ['CRISISLEX_CRISISLEXREC', 46], ['USPEC_POLITICS_GENERAL1', 57], ['USPEC_POLICY1', 66], ['WB_2432_FRAGILITY_CONFLICT_AND_VIOLENCE', 77], ['CRISISLEX_C07_SAFETY', 82]
+          ['CRISISLEX_C07_SAFETY', -2.6097195868286702], ['CYBER_ATTACK', 0.54267047275461378], ['WB_2432_FRAGILITY_CONFLICT_AND_VIOLENCE', 1.7714338454058705], ['USPEC_POLITICS_GENERAL1', 2.6082093955230463], ['GENERAL_GOVERNMENT', 3.5488375781411672], ['USPEC_POLICY1', 5.0570517939013273], ['CRISISLEX_CRISISLEXREC', 6.077465393460824], ['WB_696_PUBLIC_SECTOR_MANAGEMENT', 6.2139594192668142], ['WB_133_INFORMATION_AND_COMMUNICATION_TECHNOLOGIES', 8.0118676439689356], ['WB_678_DIGITAL_GOVERNMENT', 15.180811069741585]
         ]); 
 
         // Set chart options
-        var options = {'title':'Most Distant Network Pairs',
+        var options = {'title':'Network Pair Distance',
                        'width':1000,
                        'height':600};
 

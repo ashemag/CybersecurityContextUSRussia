@@ -7,6 +7,7 @@ import numpy as np
 import math 
 from scipy.stats import kurtosis
 from scipy.stats import skew
+import csv 
 
 ########################################## PROCESS TEXT FILE #########################################
 
@@ -92,9 +93,13 @@ def createGraphs(words):
 		name2 = 'english graphs/' + word + '_eng.csv'
 		G1, edgeWeights1, IdMap1, counts1 = processFile(name1)
 		G2, edgeWeights2, IdMap2, counts2 = processFile(name2)
-		
-		processGraph(G1, counts1, edgeWeights1, IdMap1) 
-		processGraph(G2, counts2, edgeWeights2, IdMap2) 
+
+		processGraph(word + "_RUS", G1, counts1, edgeWeights1, IdMap1) 
+		processGraph(word + "_ENG", G2, counts2, edgeWeights2, IdMap2) 
+
+		if 'C07' in word: 
+			print "Russian %s: %d" % (word, G1.GetNodes())
+			print "English %s: %d" % (word, G2.GetNodes())
 
 		s[word + "_RUS"] = (G1, edgeWeights1, IdMap1, word)
 		s[word + "_ENG"] = (G2, edgeWeights2, IdMap2, word)
@@ -102,25 +107,43 @@ def createGraphs(words):
 	print "Created %d graphs" % len(s)
 	return s 
 
-def writeToFile(G, idMap, edgeWeights): 
-	f = open("proc.csv", 'w')
+def getTotalWeight(G, edgeWeights): 
+	total = 0 
+	for edge in G.Edges(): 
+		src, dst = edge.GetSrcNId(), edge.GetDstNId()
+		count = edgeWeights[(src, dst)]
+		total = total + int(count)
+	return total 
+
+#write processed version of graph to file 
+def writeToFile(filename, G, idMap, edgeWeights): 
+	print "Writing %s to file" % filename
+	filename2 = "processedGraphCSVs/" + filename + "_proc.csv"
+	f = open(filename2, 'w')
+	fields = ('Source', 'Target', 'count', 'Type', 'Weight')
+	wr = csv.DictWriter(f, fieldnames=fields, lineterminator = '\n')
+	wr.writeheader()
+	
+	totalWeight = getTotalWeight(G, edgeWeights)
+
 	for edge in G.Edges():
 		src, dst = edge.GetSrcNId(), edge.GetDstNId()
 		srcS = idMap[str(src)]
 		dstS = idMap[str(dst)]
 		count = edgeWeights[(src, dst)]
-		f.write(srcS + ',' + dstS + ',' + str(count) + '\n')
+		weight = int(count) / float(totalWeight)
+		wr.writerow({'Source':srcS, 'Target': dstS, 'count':str(count), 'Type': 'Undirected', 'Weight': str(weight)})
 	f.close()
 
 #Examine every edge that exists in the graph. If its count is < t, delete it 
-def processGraph(G, counts, edgeWeights, idMap): 
+def processGraph(filename, G, counts, edgeWeights, idMap): 
 	t = math.floor(sum(counts) / float(len(counts)))
 	for Edge in G.Edges(): 
 		srcId, dstId = Edge.GetSrcNId(), Edge.GetDstNId() 
 		count = edgeWeights[srcId, dstId]
 		if count < t: 
 			G.DelEdge(srcId, dstId)
-
+	writeToFile(filename, G, idMap, edgeWeights)
 ############################################## FEATURE EXTRACTION / AGGREGATION ###############################################
 
 #helper function 
@@ -175,20 +198,42 @@ def getFeatures(G, IdMap, centerNodeId):
 	return featureMatrix 
 
 #Iterates through features and returns a set of signature vectors 
-def aggregateFeatures(m): 
+# Returns matrix of median, mean, std, skew, kurtosis for each feature 
+def aggregateFeatures(G, m, centerNode, IdMap): 
 	sv = []
+	neighborNo, nodeCC, avg2Hop, avgNodeCC = [], [], [], []
 	for feat in m: 
-		feat2 = np.array(feat)
-		sv.append(np.median(feat2))
-		sv.append(np.mean(feat2))
-		sv.append(np.std(feat2))
+		neighborNo.append(feat[0])
+		nodeCC.append(feat[1])
+		avg2Hop.append(feat[2])
+		avgNodeCC.append(feat[3])
+
+	features = [neighborNo, nodeCC, avg2Hop, avgNodeCC]
+	
+	#for each feature, add aggregators to sv   
+	for feat in features: 
+		sv.append(np.median(np.array(feat)))
+		sv.append(np.mean(np.array(feat)))
+		sv.append(np.std(np.array(feat)))
 		sv.append(skew(feat))
 		sv.append(kurtosis(feat))
-		# feat2= np.array(feat)
-		# sf = [np.median(feat2), np.mean(feat2), np.std(feat2), skew(feat), kurtosis(feat)]
-		# signatureVectors.append(sf)
-	#[median, mean, std, skew, kurtosis]	
-	return sv
+
+	#add center node features
+	centerNodeId = IdMap[centerNode]
+	centerNodeObj = G.GetNI(centerNodeId)
+
+	#get features 
+	center_neighborCount = getNoNeighbors(centerNodeObj)
+	center_nodeCC = GetNodeClustCf(G, centerNodeId)
+	center_avgTwoHop = getAvgTwoHop(G, centerNodeObj)
+	center_avgNodeCC = getAvgNodeCC(G, centerNodeObj)
+	
+	#append to sv 
+	sv.append(center_neighborCount)
+	sv.append(center_nodeCC)
+	sv.append(center_avgTwoHop)
+	sv.append(center_avgNodeCC)
+	return sv 
 
 def netSimile(graphs): #order is russian and then english 
 	print "Starting net simile alg..."
@@ -197,7 +242,7 @@ def netSimile(graphs): #order is russian and then english
 		value = graphs[key]
 		G, edgeWeights, IdMap, centerNode = value[0], value[1], value[2], value[3]
 		m = getFeatures(G, IdMap, IdMap[centerNode])
-		sv = aggregateFeatures(m)
+		sv = aggregateFeatures(G, m, centerNode, IdMap)
 		signatureVectors[key] = sv 
 	return signatureVectors 
 ############################################## DISTANCE FUNCTION ###############################################
@@ -212,22 +257,31 @@ def evaluate(signatureVectors, keywords):
 		svRus = signatureVectors[rus]
 		svEng = signatureVectors[eng]
 		d1 = getDistance(svRus, svEng) 
-		allDistances.append([word, int(d1)])
+		allDistances.append([word, d1])
 
 	allDistances = sorted(allDistances, key=lambda x: x[1],reverse=False)
-	# for d in allDistances: 
-	# 	print "Distance for %s: %d" % (d[0], d[1]) 
+	vals = []
+	for d in allDistances: 
+		vals.append(d[1])
+	
+	median = vals[len(vals) / 2]
+	mean = sum(vals) / len(vals)
 	print allDistances 
+	print "Median: %d, Mean: %f" %(median, mean)
 
 #Canberra distance function 
 def getDistance(sv1, sv2): 
-	n = len(sv1) if len(sv1) < len(sv2) else len(sv2)
-	d = 0 
-	for i in range(n): 
-		elem1, elem2 = sv1[i], sv2[i]
-		if elem1 > 0 or elem2 > 0: 
+	d = 0
+
+	for i in range(24): 
+		elem1 = sv1[i]
+		elem2 = sv2[i]
+		if elem1 + elem2 != 0: #avoid the divide by 0 case
 			d = d + abs(elem1 - elem2) / float(elem1 + elem2)
 	return d 
+
+#network distance analyis 
+#find which feature is driving network distance 
 
 ############################################## DRIVER ###############################################
 key_words = keyWords() 
