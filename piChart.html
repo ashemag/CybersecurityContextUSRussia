@@ -1,0 +1,33 @@
+<html>
+  <head>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript">
+      google.charts.load('current', {'packages':['corechart']});
+      google.charts.setOnLoadCallback(drawChart);
+      function drawChart() {
+
+        var data = google.visualization.arrayToDataTable([
+          ['Feature', 'Contribution To Distance'],
+          // ['Number of Neighbors', 0.88065977818481356], ['Node Clustering Coefficients', 7.0426654451991038], ['Average Two Hop Number of Neighbors', 8.9839470065047138], ['Center Node Features', 2.938299562510793]
+          ['Number of Neighbors', 0.88065977818481356], 
+          ['Node Clustering Coefficients', 7.0426654451991038], 
+          ['Average Two Hop Number of Neighbors', 8.9839470065047138], 
+          ['Average Node Clustering Coefficient', 27.509383173220712], 
+          ['Center Node Features', 2.938299562510793]
+     
+        ]);
+
+        var options = {
+          title: 'Cybersecurity Terms Network Distance Features'
+        };
+
+        var chart = new google.visualization.PieChart(document.getElementById('piechart'));
+
+        chart.draw(data, options);
+      }
+    </script>
+  </head>
+  <body>
+    <div id="piechart" style="width: 1000px; height: 600px;"></div>
+  </body>
+</html>

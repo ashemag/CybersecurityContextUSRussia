@@ -97,7 +97,7 @@ def createGraphs(words):
 		processGraph(word + "_RUS", G1, counts1, edgeWeights1, IdMap1) 
 		processGraph(word + "_ENG", G2, counts2, edgeWeights2, IdMap2) 
 
-		if 'C07' in word: 
+		if 'DIGITAL' in word: 
 			print "Russian %s: %d" % (word, G1.GetNodes())
 			print "English %s: %d" % (word, G2.GetNodes())
 
@@ -280,9 +280,43 @@ def getDistance(sv1, sv2):
 			d = d + abs(elem1 - elem2) / float(elem1 + elem2)
 	return d 
 
+def getDistanceContribution(sv1, sv2):
+	d = 0 
+	for i in range(len(sv1)): 
+		elem1 = sv1[i]
+		elem2 = sv2[i]
+		if elem1 + elem2 != 0: #avoid the divide by 0 case
+			d = d + abs(elem1 - elem2) / float(elem1 + elem2)
+	return d 
+
 #network distance analyis 
 #find which feature is driving network distance 
+def analysis(signatureVectors, keywords):
+	features = [0, 0, 0, 0, 0]
+	for word in keywords: 
+		rus = word + "_RUS"
+		eng = word + "_ENG"
+		svRus = signatureVectors[rus]
+		svEng = signatureVectors[eng]
 
+		neighborNo = getDistanceContribution(svRus[0:5], svEng[0:5])
+		nodeCC = getDistanceContribution(svRus[5:11], svEng[5:11])
+		avg2Hop = getDistanceContribution(svRus[10:15], svEng[10:15])
+		avgNodeCC = getDistanceContribution(svRus[15:20], svEng[15:20])
+		centerNode = getDistanceContribution(svRus[20:], svEng[20:])
+
+		featuresVals = [neighborNo, nodeCC, avg2Hop, avgNodeCC, centerNode]
+		for i in range(len(features)): 
+			features[i] = features[i] + featuresVals[i]
+
+	featureKey = ["Number of Neighbors", "Node Clustering Coefficients", "Average Two Hop Number of Neighbors", "Average Node Clustering Coefficient", "Center Node Features"]
+	output = []
+	for i, elem in enumerate(features): 
+		if i == 3: 
+			continue 
+		output.append([featureKey[i], features[i]])
+		print "Contribution of %s: %d" % (featureKey[i], features[i])
+	print output 
 ############################################## DRIVER ###############################################
 key_words = keyWords() 
 graphs = createGraphs(key_words)
@@ -290,3 +324,4 @@ graphs = createGraphs(key_words)
 signatureVectors = netSimile(graphs) 
 # print len(signatureVectors)
 evaluate(signatureVectors, key_words)
+analysis(signatureVectors, key_words)
