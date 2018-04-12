@@ -4,4 +4,4 @@ This implentation is a tool that identifies the most discordant cybersecurity-re
 used between English and Russian speakers. It is a contribution to a broader thesis that establishes a 
 foundation for understanding the differences in how English and Russian speakers contextualize cybersecurity.
 
-[Full Thesis Here]https://github.com/ashemag/CybersecurityContextUSRussia/blob/master/Magalhaes_SURF_Thesis.pdf
+[Full Thesis Here](Magalhaes_SURF_Thesis.pdf)
